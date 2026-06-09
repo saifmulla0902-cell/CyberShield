@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: cybershield
+    env: python
+    pythonVersion: "3.10.12"
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt && python model/train_model.py"
+    startCommand: "gunicorn app:app --timeout 120"
