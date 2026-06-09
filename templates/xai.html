@@ -1,0 +1,381 @@
+{% extends "base.html" %} {% block title %}XAI Panel — CyberShield{% endblock %} {% block extra_css %}
+<style>
+    .xai-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+    
+    .xai-panel {
+        background: #06060f;
+        border: 1px solid #1a1a3a;
+        border-radius: 12px;
+        padding: 24px;
+    }
+    
+    .xai-title {
+        font-family: var(--font-head);
+        font-size: .8rem;
+        letter-spacing: 3px;
+        margin-bottom: 18px;
+    }
+    
+    .fi-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .fi-label {
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        color: var(--text-dim);
+        width: 160px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+    
+    .fi-track {
+        flex: 1;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .fi-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #7b2fff, #00d4ff);
+    }
+    
+    .fi-pct {
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        color: var(--text);
+        width: 36px;
+        text-align: right;
+    }
+    
+    .explain-box {
+        background: #080f08;
+        border: 1px solid rgba(0, 255, 136, .15);
+        border-radius: 8px;
+        padding: 18px;
+        margin-bottom: 14px;
+    }
+    
+    .ex-attack {
+        font-family: var(--font-head);
+        font-size: 1.4rem;
+        margin-bottom: 4px;
+    }
+    
+    .ex-hindi {
+        font-size: .85rem;
+        color: var(--text-dim);
+        margin-bottom: 14px;
+    }
+    
+    .reason-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(30, 30, 58, .5);
+    }
+    
+    .reason-num {
+        font-family: var(--font-head);
+        font-size: 1rem;
+        color: var(--purple);
+        width: 24px;
+        flex-shrink: 0;
+    }
+    
+    .reason-text {
+        flex: 1;
+        font-size: .85rem;
+        color: var(--text);
+    }
+    
+    .reason-pct {
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        color: var(--cyan);
+    }
+    
+    .simple-box {
+        background: #f8f4e8;
+        border: 1px solid #d4c89a;
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 14px;
+    }
+    
+    .simple-title {
+        font-family: var(--font-head);
+        font-size: .72rem;
+        color: #6a4400;
+        letter-spacing: 2px;
+        margin-bottom: 8px;
+    }
+    
+    .simple-text {
+        font-size: .9rem;
+        line-height: 1.7;
+        color: #2a1a00;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header flex-between">
+    <div>
+        <div class="page-title" style="color:#a855f7;">🧠 EXPLAINABLE AI PANEL</div>
+        <div class="page-subtitle mono">Model decisions explained • Feature importance • Simple Hindi output</div>
+    </div>
+    <button class="btn btn-green" onclick="explainNew()">🔬 Analyze & Explain</button>
+</div>
+
+<div class="xai-grid">
+    <div class="xai-panel">
+        <div class="xai-title" style="color:var(--purple);">⬡ FEATURE IMPORTANCE</div>
+        <div class="fi-row">
+            <div class="fi-label">PACKET COUNT</div>
+            <div class="fi-track">
+                <div class="fi-fill" style="width:82%"></div>
+            </div>
+            <div class="fi-pct">82%</div>
+        </div>
+        <div class="fi-row">
+            <div class="fi-label">CONNECTION RATE</div>
+            <div class="fi-track">
+                <div class="fi-fill" style="width:74%"></div>
+            </div>
+            <div class="fi-pct">74%</div>
+        </div>
+        <div class="fi-row">
+            <div class="fi-label">FAILED LOGINS</div>
+            <div class="fi-track">
+                <div class="fi-fill" style="width:68%"></div>
+            </div>
+            <div class="fi-pct">68%</div>
+        </div>
+        <div class="fi-row">
+            <div class="fi-label">SRC BYTES</div>
+            <div class="fi-track">
+                <div class="fi-fill" style="width:55%"></div>
+            </div>
+            <div class="fi-pct">55%</div>
+        </div>
+        <div class="fi-row">
+            <div class="fi-label">PORT NUMBER</div>
+            <div class="fi-track">
+                <div class="fi-fill" style="width:48%"></div>
+            </div>
+            <div class="fi-pct">48%</div>
+        </div>
+        <div class="fi-row">
+            <div class="fi-label">DIFF SRV RATE</div>
+            <div class="fi-track">
+                <div class="fi-fill" style="width:41%"></div>
+            </div>
+            <div class="fi-pct">41%</div>
+        </div>
+        <div class="fi-row">
+            <div class="fi-label">DURATION</div>
+            <div class="fi-track">
+                <div class="fi-fill" style="width:35%"></div>
+            </div>
+            <div class="fi-pct">35%</div>
+        </div>
+        <div class="fi-row">
+            <div class="fi-label">PROTOCOL</div>
+            <div class="fi-track">
+                <div class="fi-fill" style="width:28%"></div>
+            </div>
+            <div class="fi-pct">28%</div>
+        </div>
+
+        <div class="panel" style="margin-top:20px;margin-bottom:0;">
+            <div class="panel-title">ℹ️ XAI KYA HAI?</div>
+            <div style="font-size:.87rem;line-height:1.7;color:var(--text);">
+                Normal ML model sirf bolta hai: <span class="text-red">"ATTACK"</span><br><br>
+                <strong style="color:var(--cyan)">SHAP XAI</strong> batata hai <em>kyun</em> — har feature ka % contribution dikhata hai.<br><br> Doctors, banks, government — sab explanation chahte hain. Hamara system deta hai.
+            </div>
+        </div>
+    </div>
+
+    <div class="xai-panel">
+        <div class="xai-title" style="color:var(--green);">💬 MODEL EXPLANATION</div>
+        <div class="explain-box" id="explain-box">
+            <div style="text-align:center;color:var(--text-dim);font-family:var(--font-mono);font-size:.8rem;padding:20px">
+                Press "Analyze & Explain" to see the model's reasoning.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-title">📋 RECENT EXPLANATIONS</div>
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>TIME</th>
+                <th>ATTACK</th>
+                <th>RISK</th>
+                <th>TOP REASON</th>
+                <th>CONFIDENCE</th>
+            </tr>
+        </thead>
+        <tbody id="xai-body">
+            <tr>
+                <td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px">No data yet.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+    const TPL = {
+        ddos: {
+            reasons: [{
+                t: 'Packet count bahut zyada tha — 200x above normal',
+                p: '45%'
+            }, {
+                t: 'Packet size abnormally chhota (flood pattern)',
+                p: '30%'
+            }, {
+                t: 'UDP protocol pe continuous traffic',
+                p: '25%'
+            }],
+            simple: 'Ek hi waqt mein hazaron chhote packets bheje gaye — jaise koi door par lakhon baar knock karey. Yeh DDoS attack ki pehchaan hai.'
+        },
+        brute_force: {
+            reasons: [{
+                t: '50+ failed login attempts same source se',
+                p: '50%'
+            }, {
+                t: 'SSH port pe repeated connections',
+                p: '30%'
+            }, {
+                t: 'High connection rate same server',
+                p: '20%'
+            }],
+            simple: 'Kisi ne baar baar alag passwords try kiye — jaise lock todne ki koshish. Yeh clearly brute force attack hai.'
+        },
+        port_scan: {
+            reasons: [{
+                t: '500+ alag alag ports pe connection try',
+                p: '55%'
+            }, {
+                t: 'Har connection bahut short duration',
+                p: '30%'
+            }, {
+                t: 'High diff_srv_rate detected',
+                p: '15%'
+            }],
+            simple: 'Network ke har darwaze ko thok thok ke dekha — kaunsa khula hai. Yeh bade attack ki taiyari hai.'
+        },
+        sql_injection: {
+            reasons: [{
+                t: 'Database port pe unusual payload',
+                p: '40%'
+            }, {
+                t: 'HTTP POST mein abnormal data',
+                p: '35%'
+            }, {
+                t: 'Port 3306 pe suspicious connection',
+                p: '25%'
+            }],
+            simple: 'Form mein normal naam ki jagah SQL command likhi — database hack karne ki koshish.'
+        },
+        phishing: {
+            reasons: [{
+                t: 'Suspicious domain se large transfer',
+                p: '45%'
+            }, {
+                t: 'Unusual HTTP redirect pattern',
+                p: '30%'
+            }, {
+                t: 'Mixed srv rate — fake site pattern',
+                p: '25%'
+            }],
+            simple: 'User ko fake login page pe bheja ja raha hai — phishing attack ka classic pattern.'
+        },
+        malware: {
+            reasons: [{
+                t: 'Port 4444 pe lamba connection (C2)',
+                p: '50%'
+            }, {
+                t: 'Bahut zyada outbound data',
+                p: '30%'
+            }, {
+                t: 'Connection duration abnormally lamba',
+                p: '20%'
+            }],
+            simple: 'Koi program secretly bahar wale server se connect ho raha hai — malware C2 communication pattern.'
+        },
+        normal: {
+            reasons: [{
+                t: 'Packet frequency normal range mein',
+                p: '40%'
+            }, {
+                t: 'Standard port use (80/443)',
+                p: '35%'
+            }, {
+                t: 'Connection duration expected range',
+                p: '25%'
+            }],
+            simple: 'Sab kuch normal hai. Standard connection, normal packet count, koi suspicious pattern nahi.'
+        },
+    };
+    async function explainNew() {
+        const r = await (await fetch('/api/simulate', {
+            method: 'POST'
+        })).json();
+        const tpl = TPL[r.attack_type] || TPL.normal;
+        const col = r.risk_level === 'HIGH' ? 'var(--red)' : r.risk_level === 'MEDIUM' ? 'var(--orange)' : 'var(--green)';
+        document.getElementById('explain-box').innerHTML = `
+    <div class="ex-attack" style="color:${col}">${r.attack_type.replace(/_/g,' ').toUpperCase()}</div>
+    <div class="ex-hindi">${r.hindi_label}</div>
+    <div style="display:flex;gap:16px;margin-bottom:14px;">
+      ${riskBadge(r.risk_level)}
+      <span class="mono text-dim" style="font-size:.78rem">Confidence: ${Math.round(r.confidence*100)}%</span>
+      <span class="mono text-dim" style="font-size:.78rem">Score: ${r.risk_score}/100</span>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--purple);letter-spacing:1px;margin-bottom:8px;">
+      🧠 TOP 3 REASONS:
+    </div>
+    ${tpl.reasons.map((r,i)=>`
+      <div class="reason-row">
+        <div class="reason-num">${i+1}.</div>
+        <div class="reason-text">${r.t}</div>
+        <div class="reason-pct">${r.p}</div>
+      </div>`).join('')}
+    <div class="simple-box">
+      <div class="simple-title">📖 SIMPLE LANGUAGE MEIN</div>
+      <div class="simple-text">${tpl.simple}</div>
+    </div>`;
+  loadXAILog();
+}
+async function loadXAILog(){
+  const logs=await(await fetch('/api/logs?limit=15')).json();
+  const tbody=document.getElementById('xai-body');
+  if(!logs.length)return;
+  tbody.innerHTML=logs.map(l=>{
+    const tpl=TPL[l.attack_type]||TPL.normal;
+    return`<tr>
+      <td class="mono">${fmtTime(l.timestamp)}</td>
+      <td>${attackBadge(l.attack_type)}</td>
+      <td>${riskBadge(l.risk_level)}</td>
+      <td style="font-size:.78rem">${tpl.reasons[0]?.t||'-'}</td>
+      <td class="mono text-dim">${Math.round((l.confidence||0)*100)}%</td>
+    </tr>`;
+  }).join('');
+}
+loadXAILog();
+setInterval(()=>{if(monitorActive)loadXAILog();},5000);
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CyberShield{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <canvas id="matrix-bg"></canvas>
+    <nav class="sidebar">
+        <div class="logo">
+            <span class="logo-icon">🛡️</span>
+            <span class="logo-text">CyberShield</span>
+        </div>
+        <div class="monitor-badge" id="monitor-badge">
+            <span class="pulse-dot"></span>
+            <span id="monitor-status-text">OFFLINE</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/" class="nav-item {% if request.path=='/' %}active{% endif %}">⬡ Dashboard</a></li>
+            <li><a href="/analysis" class="nav-item {% if request.path=='/analysis' %}active{% endif %}">🔬 Analysis Lab</a></li>
+            <li><a href="/risk" class="nav-item {% if request.path=='/risk' %}active{% endif %}">🎯 Risk Console</a></li>
+            <li><a href="/alerts" class="nav-item {% if request.path=='/alerts' %}active{% endif %}">🚨 Alert Center</a></li>
+            <li><a href="/xai" class="nav-item {% if request.path=='/xai' %}active{% endif %}">🧠 XAI Panel</a></li>
+            <li><a href="/geomap" class="nav-item {% if request.path=='/geomap' %}active{% endif %}">🌍 GeoIP Map</a></li>
+            <li><a href="/reports" class="nav-item {% if request.path=='/reports' %}active{% endif %}">📄 Reports</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-start" id="global-monitor-btn" onclick="toggleMonitor()">▶ START MONITOR</button>
+        </div>
+    </nav>
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    <div id="alert-toast" class="alert-toast hidden">
+        <div class="toast-inner">
+            <span class="toast-icon">🚨</span>
+            <div>
+                <div class="toast-title" id="toast-title">Alert!</div>
+                <div class="toast-msg" id="toast-msg"></div>
+            </div>
+            <button onclick="closeToast()">✕</button>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

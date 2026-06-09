@@ -1,0 +1,296 @@
+{% extends "base.html" %} {% block title %}Risk Console — CyberShield{% endblock %} {% block extra_css %}
+<style>
+    .risk-hero {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+    
+    .gauge-panel {
+        background: #0a0012;
+        border: 1px solid #3a1a6e;
+        border-radius: 12px;
+        padding: 28px 20px;
+        text-align: center;
+    }
+    
+    .gauge-title {
+        font-family: var(--font-head);
+        font-size: .75rem;
+        color: var(--purple);
+        letter-spacing: 3px;
+        margin-bottom: 20px;
+    }
+    
+    .gauge-score {
+        font-family: var(--font-head);
+        font-size: 3.5rem;
+        font-weight: 900;
+        margin: 8px 0 4px;
+        transition: color .5s;
+    }
+    
+    .gauge-level {
+        font-family: var(--font-mono);
+        font-size: .9rem;
+        letter-spacing: 3px;
+        margin-bottom: 8px;
+    }
+    
+    .gauge-attack {
+        font-size: .72rem;
+        color: var(--text-dim);
+        font-family: var(--font-mono);
+    }
+    
+    .risk-info {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    
+    .risk-tier {
+        padding: 16px 20px;
+        border-radius: 8px;
+        border: 1px solid;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: transform .2s;
+    }
+    
+    .risk-tier:hover {
+        transform: translateX(4px);
+    }
+    
+    .risk-tier.low {
+        background: rgba(0, 255, 136, 0.05);
+        border-color: rgba(0, 255, 136, .2);
+    }
+    
+    .risk-tier.medium {
+        background: rgba(255, 136, 0, 0.05);
+        border-color: rgba(255, 136, 0, .2);
+    }
+    
+    .risk-tier.high {
+        background: rgba(255, 34, 85, 0.05);
+        border-color: rgba(255, 34, 85, .2);
+    }
+    
+    .tier-icon {
+        font-size: 2rem;
+    }
+    
+    .tier-label {
+        font-family: var(--font-head);
+        font-size: 1rem;
+        letter-spacing: 2px;
+    }
+    
+    .tier-range {
+        font-family: var(--font-mono);
+        font-size: .75rem;
+        color: var(--text-dim);
+    }
+    
+    .tier-count {
+        margin-left: auto;
+        font-family: var(--font-head);
+        font-size: 1.8rem;
+    }
+    
+    .risk-tier.low .tier-label,
+    .risk-tier.low .tier-count {
+        color: var(--green);
+    }
+    
+    .risk-tier.medium .tier-label,
+    .risk-tier.medium .tier-count {
+        color: var(--orange);
+    }
+    
+    .risk-tier.high .tier-label,
+    .risk-tier.high .tier-count {
+        color: var(--red);
+    }
+    
+    .recent-risk {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+    
+    .risk-dot {
+        height: 32px;
+        border-radius: 4px;
+        cursor: default;
+        transition: transform .2s;
+    }
+    
+    .risk-dot:hover {
+        transform: scaleY(1.2);
+    }
+    
+    .risk-dot.low {
+        background: rgba(0, 255, 136, .5);
+    }
+    
+    .risk-dot.medium {
+        background: rgba(255, 136, 0, .6);
+    }
+    
+    .risk-dot.high {
+        background: var(--red);
+        box-shadow: 0 0 10px rgba(255, 34, 85, .4);
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header flex-between">
+    <div>
+        <div class="page-title" style="color:var(--purple);">🎯 RISK CONSOLE</div>
+        <div class="page-subtitle mono">Real-time risk scoring • Low / Medium / High classification</div>
+    </div>
+    <button class="btn btn-cyan" onclick="simulateAndUpdate()">⚡ Simulate + Score</button>
+</div>
+
+<div class="risk-hero">
+    <div class="gauge-panel">
+        <div class="gauge-title">⬡ NETWORK RISK METER</div>
+        <svg width="240" height="140" viewBox="0 0 240 140">
+      <defs>
+        <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#00ff88"/>
+          <stop offset="50%"  stop-color="#ff8800"/>
+          <stop offset="100%" stop-color="#ff2255"/>
+        </linearGradient>
+      </defs>
+      <path d="M 20 120 A 100 100 0 0 1 220 120" fill="none" stroke="#1e1e3a" stroke-width="14" stroke-linecap="round"/>
+      <path id="gauge-fill" d="M 20 120 A 100 100 0 0 1 220 120" fill="none"
+        stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round"
+        stroke-dasharray="314" stroke-dashoffset="314"/>
+      <line id="gauge-needle" x1="120" y1="120" x2="120" y2="30"
+        stroke="#fff" stroke-width="2" stroke-linecap="round" transform="rotate(-90 120 120)"/>
+      <circle cx="120" cy="120" r="6" fill="#fff"/>
+      <text x="16"  y="136" fill="#00ff88" font-size="10" font-family="Share Tech Mono">LOW</text>
+      <text x="102" y="24"  fill="#ff8800" font-size="10" font-family="Share Tech Mono" text-anchor="middle">MED</text>
+      <text x="200" y="136" fill="#ff2255" font-size="10" font-family="Share Tech Mono" text-anchor="end">HIGH</text>
+    </svg>
+        <div class="gauge-score" id="gauge-score">--</div>
+        <div class="gauge-level" id="gauge-level">WAITING...</div>
+        <div class="gauge-attack" id="gauge-attack">Press simulate to analyze</div>
+    </div>
+
+    <div class="risk-info">
+        <div class="risk-tier low">
+            <div class="tier-icon">🛡️</div>
+            <div>
+                <div class="tier-label">LOW RISK</div>
+                <div class="tier-range">Score: 0–33 • Normal traffic</div>
+            </div>
+            <div class="tier-count" id="count-low">0</div>
+        </div>
+        <div class="risk-tier medium">
+            <div class="tier-icon">⚠️</div>
+            <div>
+                <div class="tier-label">MEDIUM RISK</div>
+                <div class="tier-range">Score: 34–66 • Suspicious</div>
+            </div>
+            <div class="tier-count" id="count-medium">0</div>
+        </div>
+        <div class="risk-tier high">
+            <div class="tier-icon">💀</div>
+            <div>
+                <div class="tier-label">HIGH RISK</div>
+                <div class="tier-range">Score: 67–100 • Active attack</div>
+            </div>
+            <div class="tier-count" id="count-high">0</div>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-title">📊 LAST 20 CONNECTIONS — RISK VISUALIZATION</div>
+    <div class="recent-risk" id="risk-dots"></div>
+    <div class="mono text-dim" style="font-size:.72rem;margin-top:6px;">🟩 LOW &nbsp; 🟧 MEDIUM &nbsp; 🟥 HIGH</div>
+</div>
+
+<div class="panel">
+    <div class="panel-title">🗂️ RISK SCORE LOG</div>
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>TIME</th>
+                <th>SOURCE IP</th>
+                <th>ATTACK TYPE</th>
+                <th>SCORE</th>
+                <th>LEVEL</th>
+                <th>CONFIDENCE</th>
+            </tr>
+        </thead>
+        <tbody id="risk-body">
+            <tr>
+                <td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px">No data yet.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+    function setGauge(score, level, type) {
+        const pct = score / 100;
+        document.getElementById('gauge-fill').setAttribute('stroke-dashoffset', 314 - (314 * pct));
+        document.getElementById('gauge-needle').setAttribute('transform', `rotate(${-90+(pct*180)} 120 120)`);
+        const col = level === 'HIGH' ? 'var(--red)' : level === 'MEDIUM' ? 'var(--orange)' : 'var(--green)';
+        document.getElementById('gauge-score').textContent = score;
+        document.getElementById('gauge-score').style.color = col;
+        document.getElementById('gauge-level').textContent = level;
+        document.getElementById('gauge-level').style.color = col;
+        document.getElementById('gauge-attack').textContent = type.replace(/_/g, ' ').toUpperCase();
+    }
+    async function simulateAndUpdate() {
+        const r = await (await fetch('/api/simulate', {
+            method: 'POST'
+        })).json();
+        setGauge(r.risk_score, r.risk_level, r.attack_type);
+        if (r.risk_level === 'HIGH') {
+            showToast('🔴 HIGH RISK!', r.hindi_label, 'red');
+            speakAlert(r.hindi_label);
+        }
+        loadRiskData();
+    }
+    async function loadRiskData() {
+        const s = await (await fetch('/api/stats')).json();
+        document.getElementById('count-low').textContent = s.normal || 0;
+        document.getElementById('count-high').textContent = s.high_risk || 0;
+        const med = Math.max(0, (s.attacks || 0) - (s.high_risk || 0));
+        document.getElementById('count-medium').textContent = med;
+
+        const logs = await (await fetch('/api/logs?limit=20')).json();
+        document.getElementById('risk-dots').innerHTML = logs.slice(0, 20).map(l => {
+            const cls = l.risk_level === 'HIGH' ? 'high' : l.risk_level === 'MEDIUM' ? 'medium' : 'low';
+            return `<div class="risk-dot ${cls}" title="${l.attack_type} | ${l.risk_score}"></div>`;
+        }).join('');
+
+        const tbody = document.getElementById('risk-body');
+        if (!logs.length) return;
+        tbody.innerHTML = logs.map(l => {
+            const col = l.risk_level === 'HIGH' ? 'var(--red)' : l.risk_level === 'MEDIUM' ? 'var(--orange)' : 'var(--green)';
+            return `<tr>
+      <td class="mono">${fmtTime(l.timestamp)}</td>
+      <td class="mono text-cyan">${l.src_ip}</td>
+      <td>${attackBadge(l.attack_type)}</td>
+      <td class="mono" style="color:${col};font-weight:bold">${l.risk_score}</td>
+      <td>${riskBadge(l.risk_level)}</td>
+      <td class="mono text-dim">${Math.round((l.confidence||0)*100)}%</td>
+    </tr>`;
+        }).join('');
+    }
+    loadRiskData();
+    setInterval(() => {
+        if (monitorActive) loadRiskData();
+    }, 3500);
+</script>
+{% endblock %}

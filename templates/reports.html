@@ -1,0 +1,150 @@
+{% extends "base.html" %} {% block title %}Reports — CyberShield{% endblock %} {% block extra_css %}
+<style>
+    .report-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 28px;
+        text-align: center;
+        transition: transform .2s;
+    }
+    
+    .report-card:hover {
+        transform: translateY(-3px);
+    }
+    
+    .report-icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+    }
+    
+    .report-title {
+        font-family: var(--font-head);
+        font-size: 1rem;
+        letter-spacing: 2px;
+        color: var(--cyan);
+        margin-bottom: 8px;
+    }
+    
+    .report-desc {
+        font-size: .85rem;
+        color: var(--text-dim);
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+    
+    .gen-status {
+        margin-top: 16px;
+        font-family: var(--font-mono);
+        font-size: .8rem;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header">
+    <div class="page-title" style="color:#e94560;">📄 REPORT STUDIO</div>
+    <div class="page-subtitle">Auto-generate PDF security reports</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:28px;">
+    <div class="report-card">
+        <div class="report-icon">📅</div>
+        <div class="report-title">DAILY REPORT</div>
+        <div class="report-desc">Aaj ke saare attacks, risk scores, aur traffic summary ek PDF mein.</div>
+        <button class="btn btn-green" onclick="genReport('Daily')">⬇ Generate Daily PDF</button>
+        <div class="gen-status" id="status-daily"></div>
+    </div>
+    <div class="report-card">
+        <div class="report-icon">📆</div>
+        <div class="report-title">WEEKLY REPORT</div>
+        <div class="report-desc">Is hafte ka poora security summary with attack trends.</div>
+        <button class="btn btn-cyan" onclick="genReport('Weekly')">⬇ Generate Weekly PDF</button>
+        <div class="gen-status" id="status-weekly"></div>
+    </div>
+    <div class="report-card">
+        <div class="report-icon">📊</div>
+        <div class="report-title">FULL REPORT</div>
+        <div class="report-desc">Saare logs, saare attacks, complete historical data PDF.</div>
+        <button class="btn" style="background:var(--purple);color:white" onclick="genReport('Full')">⬇ Generate Full PDF</button>
+        <div class="gen-status" id="status-full"></div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-title">📋 REPORT INCLUDES</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+            <p style="color:var(--text);font-size:.9rem;line-height:2;">
+                ✅ Executive Summary (Total / Attacks / High Risk)<br> ✅ Attack Type Breakdown Table<br> ✅ Recent 15 Attack Logs<br> ✅ Risk Score Distribution
+            </p>
+        </div>
+        <div>
+            <p style="color:var(--text);font-size:.9rem;line-height:2;">
+                ✅ College Name & Date<br> ✅ Professional PDF Format<br> ✅ Color-coded Risk Levels<br> ✅ Suitable for submission to Pradnya Madam 😄
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ALERT SETTINGS PANEL - ADDED KARO -->
+<div class="panel" style="margin-top:20px;">
+    <div class="panel-title">⚙️ ALERT SETTINGS — TEST KARO</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+        <div>
+            <button class="btn btn-cyan" onclick="testEmail()">📧 Test Email Alert</button>
+            <div class="mono text-dim" style="font-size:.72rem;margin-top:4px" id="email-status"></div>
+        </div>
+        <div>
+            <button class="btn" style="background:var(--purple);color:white" onclick="testTelegram()">✈️ Test Telegram</button>
+            <div class="mono text-dim" style="font-size:.72rem;margin-top:4px" id="tg-status"></div>
+        </div>
+    </div>
+</div>
+<!-- END ALERT SETTINGS -->
+
+{% endblock %} {% block extra_js %}
+<script>
+    async function genReport(period) {
+        const statusId = 'status-' + period.toLowerCase();
+        document.getElementById(statusId).innerHTML =
+            '<span class="text-cyan">⏳ Generating...</span>';
+        try {
+            const res = await fetch('/api/report/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    period
+                })
+            });
+            const data = await res.json();
+            document.getElementById(statusId).innerHTML =
+                `<span class="text-green">✅ Ready! </span>
+       <a href="/api/report/download?file=${encodeURIComponent(data.file)}"
+          style="color:var(--cyan);font-family:var(--font-mono);font-size:.75rem">
+         ⬇ DOWNLOAD PDF</a>`;
+        } catch (e) {
+            document.getElementById(statusId).innerHTML =
+                '<span class="text-red">❌ Error generating report</span>';
+        }
+    }
+
+    // Alert settings ke liye functions (add kiye)
+    async function testEmail() {
+        document.getElementById('email-status').textContent = 'Sending...';
+        const r = await (await fetch('/api/test/email', {
+            method: 'POST'
+        })).json();
+        document.getElementById('email-status').textContent =
+            r.status === 'sent' ? '✅ Email sent!' : '❌ Error: ' + r.message;
+    }
+
+    async function testTelegram() {
+        document.getElementById('tg-status').textContent = 'Sending...';
+        const r = await (await fetch('/api/test/telegram', {
+            method: 'POST'
+        })).json();
+        document.getElementById('tg-status').textContent =
+            r.status === 'sent' ? '✅ Telegram sent!' : '❌ Error: ' + r.message;
+    }
+</script>
+{% endblock %}

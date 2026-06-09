@@ -1,0 +1,246 @@
+{% extends "base.html" %} {% block title %}GeoIP Map — CyberShield{% endblock %} {% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+    #map {
+        height: 500px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+    
+    .map-legend {
+        display: flex;
+        gap: 20px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: .78rem;
+        color: var(--text-dim);
+    }
+    
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    
+    .geo-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .geo-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+    }
+    
+    .geo-val {
+        font-family: var(--font-head);
+        font-size: 1.8rem;
+        color: var(--cyan);
+    }
+    
+    .geo-label {
+        font-family: var(--font-mono);
+        font-size: .7rem;
+        color: var(--text-dim);
+        margin-top: 4px;
+    }
+    
+    .country-list {
+        max-height: 260px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header flex-between">
+    <div>
+        <div class="page-title" style="color:#00d4ff;">🌍 GEOIP ATTACK MAP</div>
+        <div class="page-subtitle mono">Live attack source locations • World map visualization</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <button class="btn btn-cyan" onclick="simulateAndRefresh()">⚡ Simulate + Map</button>
+        <button class="btn btn-green" onclick="loadMapData()">↻ Refresh</button>
+    </div>
+</div>
+
+<div class="geo-stats">
+    <div class="geo-card">
+        <div class="geo-val" id="geo-total">0</div>
+        <div class="geo-label">TOTAL ATTACKS</div>
+    </div>
+    <div class="geo-card">
+        <div class="geo-val" id="geo-countries">0</div>
+        <div class="geo-label">COUNTRIES</div>
+    </div>
+    <div class="geo-card">
+        <div class="geo-val" id="geo-high">0</div>
+        <div class="geo-label" style="color:var(--red)">HIGH RISK</div>
+    </div>
+    <div class="geo-card">
+        <div class="geo-val" id="geo-top">--</div>
+        <div class="geo-label">TOP SOURCE</div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-title">🗺️ LIVE THREAT MAP</div>
+    <div id="map"></div>
+    <div class="map-legend">
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#ff2255"></div>HIGH RISK</div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#ff8800"></div>MEDIUM RISK</div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#00ff88"></div>LOW / NORMAL</div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#00d4ff"></div>LOCAL NETWORK</div>
+    </div>
+</div>
+
+<div class="two-col">
+    <div class="panel">
+        <div class="panel-title">🏳️ TOP ATTACK COUNTRIES</div>
+        <div class="country-list">
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>FLAG</th>
+                        <th>COUNTRY</th>
+                        <th>ATTACKS</th>
+                        <th>RISK</th>
+                    </tr>
+                </thead>
+                <tbody id="country-table"></tbody>
+            </table>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-title">📍 RECENT GEO LOGS</div>
+        <div style="max-height:260px;overflow-y:auto;">
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>IP</th>
+                        <th>CITY</th>
+                        <th>ATTACK</th>
+                        <th>SCORE</th>
+                    </tr>
+                </thead>
+                <tbody id="geo-log-table"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+    // Dark tile map
+    const map = L.map('map', {
+        zoomControl: true
+    }).setView([20, 0], 2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 18
+    }).addTo(map);
+
+    let markers = [];
+
+    function getColor(level) {
+        return level === 'HIGH' ? '#ff2255' : level === 'MEDIUM' ? '#ff8800' :
+            level === 'LOW' ? '#00ff88' : '#00d4ff';
+    }
+
+    function clearMarkers() {
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+    }
+
+    async function loadMapData() {
+        const res = await fetch('/api/geomap');
+        const pts = await res.json();
+        clearMarkers();
+
+        const countryCounts = {};
+        let highCount = 0;
+
+        pts.forEach(p => {
+            const col = getColor(p.risk_level);
+            const pulse = p.risk_level === 'HIGH' ? '0.8' : '0.5';
+            const circle = L.circleMarker([p.lat, p.lon], {
+                radius: p.risk_level === 'HIGH' ? 12 : p.risk_level === 'MEDIUM' ? 8 : 6,
+                fillColor: col,
+                color: col,
+                weight: 1,
+                opacity: 1,
+                fillOpacity: parseFloat(pulse)
+            }).bindPopup(`
+      <div style="font-family:monospace;font-size:12px;min-width:200px;">
+        <b style="color:${col}">${p.flag} ${p.attack_type.replace(/_/g,' ').toUpperCase()}</b><br>
+        <b>IP:</b> ${p.src_ip}<br>
+        <b>Location:</b> ${p.city}, ${p.country}<br>
+        <b>Risk Score:</b> ${p.risk_score}/100<br>
+        <b>Level:</b> ${p.risk_level}<br>
+        <b>Time:</b> ${p.timestamp}
+      </div>`);
+            circle.addTo(map);
+            markers.push(circle);
+
+            const key = `${p.flag} ${p.country}`;
+            countryCounts[key] = (countryCounts[key] || 0) + 1;
+            if (p.risk_level === 'HIGH') highCount++;
+        });
+
+        // Stats
+        document.getElementById('geo-total').textContent = pts.length;
+        document.getElementById('geo-countries').textContent = Object.keys(countryCounts).length;
+        document.getElementById('geo-high').textContent = highCount;
+        document.getElementById('geo-high').style.color = highCount > 0 ? 'var(--red)' : 'var(--green)';
+
+        const topCountry = Object.entries(countryCounts).sort((a, b) => b[1] - a[1])[0];
+        document.getElementById('geo-top').textContent = topCountry ? topCountry[0].split(' ')[0] : '--';
+
+        // Country table
+        const sorted = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+        document.getElementById('country-table').innerHTML = sorted.map(([name, count]) => `
+    <tr>
+      <td style="font-size:1.2rem">${name.split(' ')[0]}</td>
+      <td class="mono text-cyan">${name.split(' ').slice(1).join(' ')}</td>
+      <td class="mono text-orange">${count}</td>
+      <td>${riskBadge(count>5?'HIGH':count>2?'MEDIUM':'LOW')}</td>
+    </tr>`).join('');
+
+        // Geo log table
+        document.getElementById('geo-log-table').innerHTML = pts.slice(0, 15).map(p => `
+    <tr>
+      <td class="mono text-cyan" style="font-size:.72rem">${p.src_ip}</td>
+      <td class="mono" style="font-size:.72rem">${p.flag} ${p.city}</td>
+      <td>${attackBadge(p.attack_type)}</td>
+      <td class="mono" style="color:${getColor(p.risk_level)}">${p.risk_score}</td>
+    </tr>`).join('');
+    }
+
+    async function simulateAndRefresh() {
+        await fetch('/api/simulate', {
+            method: 'POST'
+        });
+        await loadMapData();
+        showToast('🌍 Map Updated!', 'New attack plotted on map.', 'cyan');
+    }
+
+    loadMapData();
+    setInterval(() => {
+        if (monitorActive) loadMapData();
+    }, 5000);
+</script>
+{% endblock %}

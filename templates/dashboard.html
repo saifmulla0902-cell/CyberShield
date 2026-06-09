@@ -1,0 +1,232 @@
+{% extends "base.html" %} {% block title %}Dashboard — CyberShield{% endblock %} {% block extra_css %}
+<style>
+    .live-feed {
+        max-height: 320px;
+        overflow-y: auto;
+    }
+    
+    .simulate-bar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 14px 18px;
+        background: rgba(0, 212, 255, 0.04);
+        border: 1px solid rgba(0, 212, 255, 0.15);
+        border-radius: 6px;
+    }
+    
+    .last-result {
+        font-family: var(--font-mono);
+        font-size: .78rem;
+        color: var(--text-dim);
+        flex: 1;
+    }
+    
+    .threat-bar {
+        margin: 6px 0;
+    }
+    
+    .threat-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: .75rem;
+        margin-bottom: 3px;
+        font-family: var(--font-mono);
+    }
+    
+    .bar-track {
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width .5s ease;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header flex-between">
+    <div>
+        <div class="page-title">⬡ LIVE DASHBOARD</div>
+        <div class="page-subtitle">Real-time network threat monitoring</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <button class="btn btn-cyan" onclick="simulateOne()">⚡ Simulate Packet</button>
+        <button class="btn btn-green" onclick="loadAll()">↻ Refresh</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card cyan">
+        <div class="stat-label">TOTAL ANALYZED</div>
+        <div class="stat-value" id="s-total">0</div>
+        <div class="stat-icon">📡</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-label">ATTACKS DETECTED</div>
+        <div class="stat-value" id="s-attacks">0</div>
+        <div class="stat-icon">⚔️</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-label">HIGH RISK</div>
+        <div class="stat-value" id="s-high">0</div>
+        <div class="stat-icon">🔥</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-label">NORMAL TRAFFIC</div>
+        <div class="stat-value" id="s-normal">0</div>
+        <div class="stat-icon">✅</div>
+    </div>
+</div>
+
+<div class="simulate-bar">
+    <span style="color:var(--cyan);font-family:var(--font-mono);font-size:.8rem;">LAST RESULT →</span>
+    <span class="last-result" id="last-result">Press Simulate Packet to test ML model...</span>
+</div>
+
+<div class="two-col">
+    <div class="panel">
+        <div class="panel-title">🎯 ATTACK DISTRIBUTION</div>
+        <canvas id="pieChart" height="220"></canvas>
+    </div>
+    <div class="panel">
+        <div class="panel-title">📊 THREAT BREAKDOWN</div>
+        <div id="threat-bars"></div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-title flex-between">
+        <span><span class="live-dot active"></span>LIVE TRAFFIC LOG</span>
+        <span class="text-dim mono" style="font-size:.75rem" id="log-count">0 records</span>
+    </div>
+    <div class="live-feed">
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th>TIME</th>
+                    <th>SOURCE IP</th>
+                    <th>PROTOCOL</th>
+                    <th>PORT</th>
+                    <th>ATTACK TYPE</th>
+                    <th>RISK</th>
+                    <th>SCORE</th>
+                </tr>
+            </thead>
+            <tbody id="log-body">
+                <tr>
+                    <td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">
+                        No logs yet. Start monitoring.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+    let pie = null;
+    async function loadStats() {
+        const s = await (await fetch('/api/stats')).json();
+        document.getElementById('s-total').textContent = s.total || 0;
+        document.getElementById('s-attacks').textContent = s.attacks || 0;
+        document.getElementById('s-high').textContent = s.high_risk || 0;
+        document.getElementById('s-normal').textContent = s.normal || 0;
+        renderPie(s.by_type || []);
+        renderBars(s.by_type || [], s.total || 1);
+    }
+    async function loadLogs() {
+        const logs = await (await fetch('/api/logs?limit=30')).json();
+        document.getElementById('log-count').textContent = logs.length + ' records';
+        if (!logs.length) return;
+        document.getElementById('log-body').innerHTML = logs.map(l => `
+    <tr>
+      <td class="mono">${fmtTime(l.timestamp)}</td>
+      <td class="mono text-cyan">${l.src_ip}</td>
+      <td class="mono">${l.protocol}</td>
+      <td class="mono">${l.port}</td>
+      <td>${attackBadge(l.attack_type)}</td>
+      <td>${riskBadge(l.risk_level)}</td>
+      <td class="mono" style="color:${l.risk_score>66?'var(--red)':l.risk_score>33?'var(--orange)':'var(--green)'}">${l.risk_score}</td>
+    </tr>`).join('');
+    }
+
+    function renderPie(bt) {
+        if (pie) pie.destroy();
+        pie = new Chart(document.getElementById('pieChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: bt.map(t => t.attack_type.toUpperCase()),
+                datasets: [{
+                    data: bt.map(t => t.count),
+                    backgroundColor: ['#00ff88', '#ff2255', '#ff8800', '#00d4ff', '#7b2fff', '#ffe600', '#ff55aa'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#c8ccd4',
+                            font: {
+                                family: 'Share Tech Mono',
+                                size: 10
+                            }
+                        }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    function renderBars(bt, total) {
+        const colors = {
+            normal: '#00ff88',
+            ddos: '#ff2255',
+            brute_force: '#ff8800',
+            port_scan: '#00d4ff',
+            sql_injection: '#7b2fff',
+            phishing: '#ffe600',
+            malware: '#ff55aa'
+        };
+        document.getElementById('threat-bars').innerHTML = bt.map(t => {
+            const pct = Math.round((t.count / total) * 100);
+            const col = colors[t.attack_type] || '#00d4ff';
+            return `<div class="threat-bar">
+      <div class="threat-label">
+        <span style="color:${col}">${t.attack_type.replace(/_/g,' ').toUpperCase()}</span>
+        <span class="text-dim">${t.count} (${pct}%)</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+    </div>`;
+        }).join('');
+    }
+    async function simulateOne() {
+        const r = await (await fetch('/api/simulate', {
+            method: 'POST'
+        })).json();
+        const icon = r.risk_level === 'HIGH' ? '🔴' : r.risk_level === 'MEDIUM' ? '🟡' : '🟢';
+        document.getElementById('last-result').innerHTML =
+            `${icon} ${r.attack_type.toUpperCase()} | ${r.src_ip} → Port ${r.port} | Score: ${r.risk_score}/100 | "${r.hindi_label}"`;
+        if (r.risk_level === 'HIGH') {
+            showToast('🚨 HIGH RISK!', r.hindi_label, 'red');
+            speakAlert(r.hindi_label);
+        }
+        loadAll();
+    }
+
+    function loadAll() {
+        loadStats();
+        loadLogs();
+    }
+    loadAll();
+    setInterval(() => {
+        if (monitorActive) loadAll();
+    }, 3000);
+</script>
+{% endblock %}

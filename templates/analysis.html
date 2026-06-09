@@ -1,0 +1,349 @@
+{% extends "base.html" %} {% block title %}Analysis Lab — CyberShield{% endblock %} {% block extra_css %}
+<style>
+    .lab-panel {
+        background: #0d1117;
+        border: 1px solid #1e3a2f;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 18px;
+    }
+    
+    .lab-title {
+        font-family: var(--font-head);
+        font-size: .8rem;
+        color: var(--green);
+        letter-spacing: 2px;
+        margin-bottom: 14px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #1e3a2f;
+    }
+    
+    .input-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .input-group label {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: .7rem;
+        color: var(--text-dim);
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+    }
+    
+    .input-group input,
+    .input-group select {
+        width: 100%;
+        background: #080810;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-family: var(--font-mono);
+        font-size: .85rem;
+        outline: none;
+        transition: border-color .2s;
+    }
+    
+    .input-group input:focus,
+    .input-group select:focus {
+        border-color: var(--green);
+    }
+    
+    .result-box {
+        background: #060612;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 20px;
+        display: none;
+        margin-top: 16px;
+    }
+    
+    .result-box.show {
+        display: block;
+    }
+    
+    .result-attack {
+        font-family: var(--font-head);
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+    
+    .result-hindi {
+        font-size: 1rem;
+        color: var(--text-dim);
+        margin-bottom: 16px;
+    }
+    
+    .reasons-list li {
+        font-family: var(--font-mono);
+        font-size: .82rem;
+        padding: 5px 0;
+        color: var(--text);
+        border-bottom: 1px solid rgba(30, 30, 58, .5);
+        list-style: none;
+    }
+    
+    .reasons-list li::before {
+        content: '▶ ';
+        color: var(--cyan);
+    }
+    
+    .chart-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header flex-between">
+    <div>
+        <div class="page-title" style="color:var(--cyan);">🔬 ANALYSIS LAB</div>
+        <div class="page-subtitle mono">Manual packet analysis • Feature inspection • ML prediction</div>
+    </div>
+</div>
+
+<div class="lab-panel">
+    <div class="lab-title">🧪 MANUAL PACKET ANALYZER</div>
+    <div class="input-row">
+        <div class="input-group"><label>DURATION (sec)</label><input type="number" id="f-duration" value="10"></div>
+        <div class="input-group"><label>SRC BYTES</label><input type="number" id="f-src_bytes" value="500"></div>
+        <div class="input-group"><label>DST BYTES</label><input type="number" id="f-dst_bytes" value="800"></div>
+        <div class="input-group"><label>PACKET COUNT</label><input type="number" id="f-packet_count" value="20"></div>
+        <div class="input-group"><label>PROTOCOL</label>
+            <select id="f-protocol"><option value="tcp">TCP</option><option value="udp">UDP</option><option value="icmp">ICMP</option></select>
+        </div>
+        <div class="input-group"><label>PORT</label><input type="number" id="f-port" value="80"></div>
+        <div class="input-group"><label>CONNECTION RATE</label><input type="number" id="f-conn_rate" value="1.5" step="0.1"></div>
+        <div class="input-group"><label>FAILED LOGINS</label><input type="number" id="f-failed" value="0"></div>
+        <div class="input-group"><label>SAME SRV RATE</label><input type="number" id="f-same_srv" value="0.85" step="0.01"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-green" onclick="analyzeManual()">🔍 ANALYZE PACKET</button>
+        <button class="btn btn-cyan" onclick="loadPreset('normal')">Load: Normal</button>
+        <button class="btn" style="background:var(--red);color:white" onclick="loadPreset('ddos')">Load: DDoS</button>
+        <button class="btn btn-cyan" onclick="loadPreset('brute_force')">Load: Brute Force</button>
+        <button class="btn" style="background:var(--purple);color:white" onclick="loadPreset('port_scan')">Load: Port Scan</button>
+    </div>
+
+    <div class="result-box" id="analysis-result">
+        <div class="flex-between mb-16">
+            <div>
+                <div class="result-attack" id="res-type"></div>
+                <div class="result-hindi" id="res-hindi"></div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-family:var(--font-head);font-size:2.5rem" id="res-score"></div>
+                <div id="res-badge"></div>
+                <div class="mono text-dim" style="font-size:.75rem;margin-top:4px">RISK SCORE / 100</div>
+            </div>
+        </div>
+        <div class="panel-title" style="margin-bottom:10px;">🧠 WHY THIS RESULT?</div>
+        <ul class="reasons-list" id="res-reasons"></ul>
+    </div>
+</div>
+
+<div class="chart-row">
+    <div class="lab-panel">
+        <div class="lab-title">📈 HOURLY TRAFFIC PATTERN</div>
+        <canvas id="hourlyChart" height="180"></canvas>
+    </div>
+    <div class="lab-panel">
+        <div class="lab-title">🎯 ATTACK TYPE HISTORY</div>
+        <canvas id="barChart" height="180"></canvas>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+    const presets = {
+        normal: {
+            duration: 30,
+            src_bytes: 1200,
+            dst_bytes: 800,
+            packet_count: 15,
+            protocol: 'tcp',
+            port: 443,
+            conn_rate: 0.8,
+            failed: 0,
+            same_srv: 0.9
+        },
+        ddos: {
+            duration: 1,
+            src_bytes: 50,
+            dst_bytes: 10,
+            packet_count: 8000,
+            protocol: 'udp',
+            port: 53,
+            conn_rate: 300,
+            failed: 0,
+            same_srv: 0.99
+        },
+        brute_force: {
+            duration: 5,
+            src_bytes: 300,
+            dst_bytes: 200,
+            packet_count: 80,
+            protocol: 'tcp',
+            port: 22,
+            conn_rate: 18,
+            failed: 50,
+            same_srv: 0.95
+        },
+        port_scan: {
+            duration: 1,
+            src_bytes: 50,
+            dst_bytes: 20,
+            packet_count: 500,
+            protocol: 'tcp',
+            port: 4444,
+            conn_rate: 80,
+            failed: 0,
+            same_srv: 0.05
+        },
+    };
+
+    function loadPreset(type) {
+        const p = presets[type];
+        document.getElementById('f-duration').value = p.duration;
+        document.getElementById('f-src_bytes').value = p.src_bytes;
+        document.getElementById('f-dst_bytes').value = p.dst_bytes;
+        document.getElementById('f-packet_count').value = p.packet_count;
+        document.getElementById('f-protocol').value = p.protocol;
+        document.getElementById('f-port').value = p.port;
+        document.getElementById('f-conn_rate').value = p.conn_rate;
+        document.getElementById('f-failed').value = p.failed;
+        document.getElementById('f-same_srv').value = p.same_srv;
+    }
+    async function analyzeManual() {
+        const res = await fetch('/api/simulate', {
+            method: 'POST'
+        });
+        const r = await res.json();
+        const box = document.getElementById('analysis-result');
+        box.classList.add('show');
+        const col = r.risk_level === 'HIGH' ? 'var(--red)' : r.risk_level === 'MEDIUM' ? 'var(--orange)' : 'var(--green)';
+        document.getElementById('res-type').textContent = r.attack_type.replace(/_/g, ' ').toUpperCase();
+        document.getElementById('res-type').style.color = col;
+        document.getElementById('res-hindi').textContent = r.hindi_label;
+        document.getElementById('res-score').textContent = r.risk_score;
+        document.getElementById('res-score').style.color = col;
+        document.getElementById('res-badge').innerHTML = riskBadge(r.risk_level);
+        document.getElementById('res-reasons').innerHTML = (r.top_reasons || []).map(r => `<li>${r}</li>`).join('');
+        if (r.risk_level === 'HIGH') {
+            showToast('🚨 HIGH RISK!', r.hindi_label, 'red');
+            speakAlert(r.hindi_label);
+        }
+    }
+    async function loadCharts() {
+        const s = await (await fetch('/api/stats')).json();
+        const byHour = s.by_hour || [];
+        const byType = s.by_type || [];
+        const hours = Array.from({
+            length: 24
+        }, (_, i) => i + 'h');
+        const counts = hours.map(h => {
+            const f = byHour.find(b => parseInt(b.hour) === parseInt(h));
+            return f ? f.count : 0;
+        });
+        new Chart(document.getElementById('hourlyChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: hours,
+                datasets: [{
+                    label: 'Events',
+                    data: counts,
+                    borderColor: '#00d4ff',
+                    backgroundColor: 'rgba(0,212,255,0.06)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#00d4ff',
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#5a5a7a',
+                            font: {
+                                family: 'Share Tech Mono',
+                                size: 9
+                            }
+                        },
+                        grid: {
+                            color: '#1e1e3a'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#5a5a7a',
+                            font: {
+                                family: 'Share Tech Mono',
+                                size: 9
+                            }
+                        },
+                        grid: {
+                            color: '#1e1e3a'
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('barChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: byType.map(t => t.attack_type.replace(/_/g, ' ').toUpperCase()),
+                datasets: [{
+                    data: byType.map(t => t.count),
+                    backgroundColor: ['#00ff88', '#ff2255', '#ff8800', '#00d4ff', '#7b2fff', '#ffe600', '#ff55aa'],
+                    borderRadius: 4,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#5a5a7a',
+                            font: {
+                                family: 'Share Tech Mono',
+                                size: 8
+                            }
+                        },
+                        grid: {
+                            color: '#1e1e3a'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#5a5a7a',
+                            font: {
+                                family: 'Share Tech Mono',
+                                size: 9
+                            }
+                        },
+                        grid: {
+                            color: '#1e1e3a'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    loadCharts();
+</script>
+{% endblock %}

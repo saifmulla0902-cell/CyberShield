@@ -1,0 +1,313 @@
+{% extends "base.html" %} {% block title %}Alert Center — CyberShield{% endblock %} {% block extra_css %}
+<style>
+    .alert-hero {
+        background: linear-gradient(135deg, #0a0a00, #1a0d00);
+        border: 1px solid rgba(255, 136, 0, .2);
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 24px;
+        display: flex;
+        gap: 28px;
+        align-items: center;
+    }
+    
+    .radar-svg {
+        width: 180px;
+        height: 180px;
+        flex-shrink: 0;
+    }
+    
+    .radar-sweep {
+        transform-origin: 90px 90px;
+        animation: sweep 3s linear infinite;
+    }
+    
+    @keyframes sweep {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .alert-counters {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        flex: 1;
+    }
+    
+    .acb {
+        padding: 18px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .acb.critical {
+        background: rgba(255, 34, 85, .08);
+        border: 1px solid rgba(255, 34, 85, .25);
+    }
+    
+    .acb.warning {
+        background: rgba(255, 136, 0, .08);
+        border: 1px solid rgba(255, 136, 0, .25);
+    }
+    
+    .acb.info {
+        background: rgba(0, 212, 255, .05);
+        border: 1px solid rgba(0, 212, 255, .15);
+    }
+    
+    .acb.safe {
+        background: rgba(0, 255, 136, .05);
+        border: 1px solid rgba(0, 255, 136, .15);
+    }
+    
+    .acb-label {
+        font-family: var(--font-mono);
+        font-size: .68rem;
+        letter-spacing: 1px;
+        color: var(--text-dim);
+        margin-bottom: 6px;
+    }
+    
+    .acb-val {
+        font-family: var(--font-head);
+        font-size: 2.2rem;
+        font-weight: 900;
+    }
+    
+    .critical .acb-val {
+        color: var(--red);
+    }
+    
+    .warning .acb-val {
+        color: var(--orange);
+    }
+    
+    .info .acb-val {
+        color: var(--cyan);
+    }
+    
+    .safe .acb-val {
+        color: var(--green);
+    }
+    
+    .alert-card {
+        background: var(--panel);
+        border-left: 4px solid;
+        border-radius: 0 8px 8px 0;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        animation: alertIn .3s ease;
+        border-top: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+    }
+    
+    @keyframes alertIn {
+        from {
+            opacity: 0;
+            transform: translateX(-12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .alert-card.high {
+        border-left-color: var(--red);
+    }
+    
+    .alert-card.medium {
+        border-left-color: var(--orange);
+    }
+    
+    .alert-card.low {
+        border-left-color: var(--green);
+    }
+    
+    .alert-icon {
+        font-size: 1.6rem;
+    }
+    
+    .alert-body {
+        flex: 1;
+    }
+    
+    .alert-type {
+        font-family: var(--font-head);
+        font-size: .9rem;
+        letter-spacing: 1px;
+        margin-bottom: 2px;
+    }
+    
+    .alert-card.high .alert-type {
+        color: var(--red);
+    }
+    
+    .alert-card.medium .alert-type {
+        color: var(--orange);
+    }
+    
+    .alert-card.low .alert-type {
+        color: var(--green);
+    }
+    
+    .alert-hindi {
+        font-size: .82rem;
+        color: var(--text);
+        margin-bottom: 4px;
+    }
+    
+    .alert-meta {
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        color: var(--text-dim);
+    }
+    
+    .alert-time {
+        font-family: var(--font-mono);
+        font-size: .72rem;
+        color: var(--text-dim);
+        white-space: nowrap;
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header flex-between">
+    <div>
+        <div class="page-title" style="color:var(--orange);">🚨 ALERT COMMAND CENTER</div>
+        <div class="page-subtitle mono">Live threat alerts • Voice notifications • Attack log</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <button class="btn btn-cyan" onclick="testVoice()">🔊 Test Voice</button>
+        <button class="btn btn-green" onclick="loadAlerts()">↻ Refresh</button>
+    </div>
+</div>
+
+<div class="alert-hero">
+    <svg class="radar-svg" viewBox="0 0 180 180">
+    <circle cx="90" cy="90" r="85" fill="none" stroke="#1a2a0a" stroke-width="1"/>
+    <circle cx="90" cy="90" r="60" fill="none" stroke="#1a2a0a" stroke-width="1"/>
+    <circle cx="90" cy="90" r="35" fill="none" stroke="#1a2a0a" stroke-width="1"/>
+    <line x1="5"  y1="90" x2="175" y2="90"  stroke="#1a2a0a" stroke-width="1"/>
+    <line x1="90" y1="5"  x2="90"  y2="175" stroke="#1a2a0a" stroke-width="1"/>
+    <g class="radar-sweep">
+      <path d="M90 90 L90 5 A85 85 0 0 1 175 90 Z" fill="url(#radarGrad)" opacity="0.6"/>
+    </g>
+    <defs>
+      <radialGradient id="radarGrad" cx="0%" cy="100%" r="100%">
+        <stop offset="0%"   stop-color="#ff8800" stop-opacity="0.8"/>
+        <stop offset="100%" stop-color="#ff8800" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="130" cy="60" r="4" fill="var(--red)">
+      <animate attributeName="opacity" values="0;1;0" dur="2s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="50" cy="110" r="3" fill="var(--orange)">
+      <animate attributeName="opacity" values="0;1;0" dur="2.5s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="110" cy="140" r="5" fill="var(--red)">
+      <animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="0.2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="90" y="95" fill="#ff8800" font-size="9" text-anchor="middle" font-family="Share Tech Mono">SCANNING</text>
+  </svg>
+
+    <div class="alert-counters">
+        <div class="acb critical">
+            <div class="acb-label">🔴 HIGH RISK</div>
+            <div class="acb-val" id="cnt-high">0</div>
+        </div>
+        <div class="acb warning">
+            <div class="acb-label">🟡 MEDIUM</div>
+            <div class="acb-val" id="cnt-med">0</div>
+        </div>
+        <div class="acb info">
+            <div class="acb-label">📡 TOTAL</div>
+            <div class="acb-val" id="cnt-total">0</div>
+        </div>
+        <div class="acb safe">
+            <div class="acb-label">✅ SAFE</div>
+            <div class="acb-val" id="cnt-safe">0</div>
+        </div>
+    </div>
+</div>
+
+<div style="display:flex;gap:10px;margin-bottom:20px;">
+    <button class="btn btn-red" onclick="simulateAttack()">💣 Simulate Attack</button>
+    <button class="btn btn-cyan" onclick="clearFeed()">🗑 Clear</button>
+</div>
+
+<div class="panel">
+    <div class="panel-title"><span class="live-dot active"></span>LIVE ALERT FEED</div>
+    <div id="alert-feed" style="max-height:420px;overflow-y:auto;">
+        <p class="mono text-dim" style="padding:20px;text-align:center">No alerts. Start monitoring or simulate.</p>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+    const ICONS = {
+        ddos: '💥',
+        brute_force: '🔑',
+        port_scan: '🔍',
+        sql_injection: '💉',
+        phishing: '🎣',
+        malware: '🦠',
+        normal: '✅'
+    };
+    async function loadAlerts() {
+        const s = await (await fetch('/api/stats')).json();
+        document.getElementById('cnt-high').textContent = s.high_risk || 0;
+        document.getElementById('cnt-total').textContent = s.total || 0;
+        document.getElementById('cnt-safe').textContent = s.normal || 0;
+        const logs = await (await fetch('/api/logs?limit=30')).json();
+        const med = logs.filter(l => l.risk_level === 'MEDIUM').length;
+        document.getElementById('cnt-med').textContent = med;
+        const feed = document.getElementById('alert-feed');
+        if (!logs.length) return;
+        feed.innerHTML = logs.map(l => {
+            const lvl = l.risk_level.toLowerCase();
+            const icon = ICONS[l.attack_type] || '⚡';
+            return `<div class="alert-card ${lvl}">
+      <div class="alert-icon">${icon}</div>
+      <div class="alert-body">
+        <div class="alert-type">${l.attack_type.replace(/_/g,' ').toUpperCase()} — ${l.risk_level} RISK</div>
+        <div class="alert-hindi">${l.top_reason||'Network activity detected'}</div>
+        <div class="alert-meta">${l.src_ip} → Port ${l.port} | Score: ${l.risk_score}/100 | ${l.protocol}</div>
+      </div>
+      <div class="alert-time">${fmtTime(l.timestamp)}</div>
+    </div>`;
+        }).join('');
+    }
+    async function simulateAttack() {
+        const r = await (await fetch('/api/simulate', {
+            method: 'POST'
+        })).json();
+        if (r.risk_level === 'HIGH') {
+            speakAlert(r.hindi_label);
+            showToast('🚨 ATTACK!', r.hindi_label, 'red');
+        } else if (r.risk_level === 'MEDIUM') {
+            showToast('⚠️ Warning', r.hindi_label, 'orange');
+        }
+        loadAlerts();
+    }
+
+    function testVoice() {
+        speakAlert('Khabardar! Yeh ek test alert hai. CyberShield active hai.');
+    }
+
+    function clearFeed() {
+        document.getElementById('alert-feed').innerHTML =
+            '<p class="mono text-dim" style="padding:20px;text-align:center">Cleared.</p>';
+    }
+    loadAlerts();
+    setInterval(() => {
+        if (monitorActive) loadAlerts();
+    }, 3000);
+</script>
+{% endblock %}
