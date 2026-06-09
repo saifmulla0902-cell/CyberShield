@@ -1,0 +1,5 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python model/train_model.py && gunicorn app:app --timeout 120 --workers 1"

@@ -1,5 +1,9 @@
 # app.py — poora replace karo
-
+# app.py ke bilkul upar add karo
+import os
+os.makedirs('model', exist_ok=True)
+os.makedirs('database', exist_ok=True)
+os.makedirs('static', exist_ok=True)
 from flask import (Flask, render_template, jsonify, request,
                    send_file, redirect, url_for, session, flash)
 from flask_mail import Mail
