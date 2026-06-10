@@ -25,6 +25,11 @@ from utils.alert_manager import (send_email_alert, send_telegram_alert,
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# ── FIX: Render pe Gunicorn use hota hai isliye yahan call karo ──
+init_db()
+load_model()
+# ─────────────────────────────────────────────────────────────────
+
 mail         = Mail(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login_page'
