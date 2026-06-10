@@ -1,4 +1,4 @@
-import sqlite3, os
+import sqlite3, os, hashlib
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'database', 'cybershield.db')
@@ -9,6 +9,9 @@ def get_conn():
     conn.row_factory = sqlite3.Row
     return conn
 
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
 def init_db():
     conn = get_conn()
     conn.cursor().execute('''CREATE TABLE IF NOT EXISTS attack_logs (
@@ -18,7 +21,35 @@ def init_db():
         risk_score INTEGER, risk_level TEXT,
         confidence REAL, top_reason TEXT,
         packet_count INTEGER, src_bytes INTEGER, dst_bytes INTEGER)''')
+    # ── Users Table ──
+    conn.cursor().execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        created_at TEXT)''')
     conn.commit(); conn.close()
+
+def register_user(username, password):
+    """Naya user register karo. Returns True agar success, False agar username already exists."""
+    try:
+        conn = get_conn(); c = conn.cursor()
+        c.execute("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)",
+                  (username, hash_password(password),
+                   datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+        conn.commit(); conn.close()
+        return True
+    except sqlite3.IntegrityError:
+        return False  # Username already exists
+
+def verify_user(username, password):
+    """Login verify karo. Returns True agar credentials sahi hain."""
+    conn = get_conn(); c = conn.cursor()
+    c.execute("SELECT password FROM users WHERE username = ?", (username,))
+    row = c.fetchone()
+    conn.close()
+    if row and row['password'] == hash_password(password):
+        return True
+    return False
 
 def insert_log(d):
     conn = get_conn(); c = conn.cursor()
