@@ -1,5 +1,3 @@
-# app.py — poora replace karo
-# app.py ke bilkul upar add karo
 import os
 os.makedirs('model', exist_ok=True)
 os.makedirs('database', exist_ok=True)
@@ -16,7 +14,8 @@ import threading, time, os
 from config import Config
 from utils.detector import simulate_packet, predict, load_model
 from utils.db_utils  import (init_db, insert_log, get_recent_logs,
-                              get_stats, get_all_logs)
+                              get_stats, get_all_logs,
+                              register_user, verify_user)
 from utils.pdf_generator import generate_report
 from utils.alert_manager import (send_email_alert, send_telegram_alert,
                                   get_geoip)
@@ -30,26 +29,24 @@ init_db()
 load_model()
 # ─────────────────────────────────────────────────────────────────
 
-mail         = Mail(app)
+mail          = Mail(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login_page'
 
-# ── Simple Admin User ────────────────────────────────────
+# ── User Class ───────────────────────────────────────────
 class AdminUser(UserMixin):
-    def __init__(self):
-        self.id = 'admin'
+    def __init__(self, username):
+        self.id = username
 
 @login_manager.user_loader
 def load_user(user_id):
-    if user_id == 'admin':
-        return AdminUser()
-    return None
+    return AdminUser(user_id)
 
 # ── Global State ─────────────────────────────────────────
 monitoring_active = False
 monitor_thread    = None
 latest_alerts     = []
-geo_cache         = {}   # ip → geo data cache
+geo_cache         = {}
 
 # ── Background Monitor ───────────────────────────────────
 def monitor_loop():
@@ -60,7 +57,6 @@ def monitor_loop():
             result = predict(pkt)
             insert_log(result)
 
-            # GeoIP cache
             ip = result.get('src_ip','')
             if ip not in geo_cache:
                 geo_cache[ip] = get_geoip(ip)
@@ -68,38 +64,51 @@ def monitor_loop():
 
             if result['risk_level'] in ('HIGH','MEDIUM') and result['attack_type'] != 'normal':
                 latest_alerts = (latest_alerts + [result])[-20:]
-
-                # Send alerts only for HIGH risk
                 if result['risk_level'] == 'HIGH':
-                    threading.Thread(
-                        target=send_email_alert,
-                        args=(app, mail, result),
-                        daemon=True
-                    ).start()
-                    threading.Thread(
-                        target=send_telegram_alert,
-                        args=(app.config['TELEGRAM_BOT_TOKEN'],
-                              app.config['TELEGRAM_CHAT_ID'], result),
-                        daemon=True
-                    ).start()
+                    threading.Thread(target=send_email_alert, args=(app, mail, result), daemon=True).start()
+                    threading.Thread(target=send_telegram_alert,
+                        args=(app.config['TELEGRAM_BOT_TOKEN'], app.config['TELEGRAM_CHAT_ID'], result),
+                        daemon=True).start()
             time.sleep(1.5)
         except Exception as e:
             print(f"Monitor error: {e}")
             time.sleep(2)
 
 # ── Auth Routes ──────────────────────────────────────────
+@app.route('/register', methods=['GET','POST'])
+def register_page():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        username         = request.form.get('username','').strip()
+        password         = request.form.get('password','')
+        confirm_password = request.form.get('confirm_password','')
+
+        if not username or not password:
+            flash('Username aur password dono zaroori hain!', 'msg')
+        elif len(password) < 6:
+            flash('Password kam se kam 6 characters ka hona chahiye!', 'msg')
+        elif password != confirm_password:
+            flash('Dono passwords match nahi kar rahe!', 'msg')
+        else:
+            if register_user(username, password):
+                flash('Account ban gaya! Ab login karo.', 'success')
+                return redirect(url_for('login_page'))
+            else:
+                flash('Yeh username pehle se exist karta hai!', 'msg')
+    return render_template('register.html')
+
 @app.route('/login', methods=['GET','POST'])
 def login_page():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     if request.method == 'POST':
-        username = request.form.get('username','')
+        username = request.form.get('username','').strip()
         password = request.form.get('password','')
-        if (username == app.config['ADMIN_USERNAME'] and
-                password == app.config['ADMIN_PASSWORD']):
-            login_user(AdminUser(), remember=True)
+        if verify_user(username, password):
+            login_user(AdminUser(username), remember=True)
             return redirect(url_for('dashboard'))
-        flash('❌ Wrong username or password!')
+        flash('❌ Wrong username or password!', 'msg')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -180,12 +189,10 @@ def simulate_one():
     pkt    = simulate_packet()
     result = predict(pkt)
     insert_log(result)
-
     ip = result.get('src_ip','')
     if ip not in geo_cache:
         geo_cache[ip] = get_geoip(ip)
     result['geo'] = geo_cache[ip]
-
     if result['risk_level'] in ('HIGH','MEDIUM') and result['attack_type'] != 'normal':
         latest_alerts.append(result)
     return jsonify(result)
@@ -201,11 +208,9 @@ def api_geomap():
             geo_cache[ip] = get_geoip(ip)
         geo = geo_cache[ip]
         points.append({
-            'lat':         geo['lat'],
-            'lon':         geo['lon'],
-            'country':     geo['country'],
-            'city':        geo['city'],
-            'flag':        geo['flag'],
+            'lat': geo['lat'], 'lon': geo['lon'],
+            'country': geo['country'], 'city': geo['city'],
+            'flag': geo['flag'],
             'attack_type': log.get('attack_type',''),
             'risk_level':  log.get('risk_level',''),
             'risk_score':  log.get('risk_score',0),
