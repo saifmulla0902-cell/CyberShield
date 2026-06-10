@@ -7,12 +7,7 @@
     <title>CyberShield — Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #080810;
             display: flex;
@@ -21,17 +16,7 @@
             min-height: 100vh;
             font-family: 'Share Tech Mono', monospace;
         }
-        
-        canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: .05;
-            z-index: 0;
-        }
-        
+        canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; opacity: .05; z-index: 0; }
         .login-box {
             position: relative;
             z-index: 1;
@@ -41,121 +26,29 @@
             padding: 48px 40px;
             width: 420px;
             text-align: center;
-            box-shadow: 0 0 60px rgba(0, 255, 136, .05);
+            box-shadow: 0 0 60px rgba(0,255,136,.05);
         }
-        
         .login-box::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             height: 2px;
-            background: linear-gradient(90deg, #00ff88, #00d4ff);
+            background: linear-gradient(90deg,#00ff88,#00d4ff);
             border-radius: 12px 12px 0 0;
         }
-        
-        .logo {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            color: #00ff88;
-            letter-spacing: 3px;
-            margin-bottom: 6px;
-        }
-        
-        .subtitle {
-            color: #5a5a7a;
-            font-size: .75rem;
-            letter-spacing: 2px;
-            margin-bottom: 36px;
-        }
-        
-        .flash-msg {
-            background: rgba(255, 34, 85, .1);
-            border: 1px solid rgba(255, 34, 85, .3);
-            color: #ff2255;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: .8rem;
-            margin-bottom: 20px;
-        }
-        
-        .flash-success {
-            background: rgba(0, 255, 136, .1);
-            border: 1px solid rgba(0, 255, 136, .3);
-            color: #00ff88;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: .8rem;
-            margin-bottom: 20px;
-        }
-        
-        .field {
-            margin-bottom: 18px;
-            text-align: left;
-        }
-        
-        .field label {
-            display: block;
-            font-size: .7rem;
-            color: #5a5a7a;
-            letter-spacing: 2px;
-            margin-bottom: 6px;
-        }
-        
-        .field input {
-            width: 100%;
-            background: #080810;
-            border: 1px solid #1e1e3a;
-            color: #c8ccd4;
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: .9rem;
-            outline: none;
-            transition: border-color .2s;
-        }
-        
-        .field input:focus {
-            border-color: #00ff88;
-        }
-        
-        .btn-login {
-            width: 100%;
-            padding: 13px;
-            background: #00ff88;
-            color: #080810;
-            border: none;
-            border-radius: 6px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: .85rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all .2s;
-            margin-top: 8px;
-        }
-        
-        .btn-login:hover {
-            background: #00cc6a;
-            box-shadow: 0 0 20px rgba(0, 255, 136, .3);
-        }
-        
-        .register-link {
-            margin-top: 20px;
-            color: #5a5a7a;
-            font-size: .75rem;
-        }
-        
-        .register-link a {
-            color: #00ff88;
-            text-decoration: none;
-            letter-spacing: 1px;
-        }
-        
-        .register-link a:hover {
-            text-decoration: underline;
-        }
+        .logo { font-family: 'Orbitron',sans-serif; font-size: 1.8rem; color: #00ff88; letter-spacing: 3px; margin-bottom: 6px; }
+        .subtitle { color: #5a5a7a; font-size: .75rem; letter-spacing: 2px; margin-bottom: 36px; }
+        .flash-msg { background: rgba(255,34,85,.1); border: 1px solid rgba(255,34,85,.3); color: #ff2255; padding: 10px; border-radius: 6px; font-size: .8rem; margin-bottom: 20px; }
+        .flash-success { background: rgba(0,255,136,.1); border: 1px solid rgba(0,255,136,.3); color: #00ff88; padding: 10px; border-radius: 6px; font-size: .8rem; margin-bottom: 20px; }
+        .field { margin-bottom: 18px; text-align: left; }
+        .field label { display: block; font-size: .7rem; color: #5a5a7a; letter-spacing: 2px; margin-bottom: 6px; }
+        .field input { width: 100%; background: #080810; border: 1px solid #1e1e3a; color: #c8ccd4; padding: 12px 16px; border-radius: 6px; font-family: 'Share Tech Mono',monospace; font-size: .9rem; outline: none; transition: border-color .2s; }
+        .field input:focus { border-color: #00ff88; }
+        .btn-login { width: 100%; padding: 13px; background: #00ff88; color: #080810; border: none; border-radius: 6px; font-family: 'Orbitron',sans-serif; font-size: .85rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: all .2s; margin-top: 8px; }
+        .btn-login:hover { background: #00cc6a; box-shadow: 0 0 20px rgba(0,255,136,.3); }
+        .register-link { margin-top: 20px; color: #5a5a7a; font-size: .75rem; }
+        .register-link a { color: #00ff88; text-decoration: none; letter-spacing: 1px; }
+        .register-link a:hover { text-decoration: underline; }
     </style>
 </head>
 
@@ -165,9 +58,13 @@
         <div class="logo">🛡️ CYBERSHIELD</div>
         <div class="subtitle">AI-BASED CYBER ATTACK DETECTION</div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, msg in messages %}
-        <div class="flash-{{ category }}">{{ msg }}</div>
-        {% endfor %} {% endif %} {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="flash-{{ category }}">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
         <form method="POST" action="/login">
             <div class="field">
@@ -182,30 +79,24 @@
         </form>
 
         <div class="register-link">
-            Naya account? <a href="/register">REGISTER HERE</a>
+            Naya account?  <a href="/register">REGISTER HERE</a>
         </div>
     </div>
 
     <script>
-        const c = document.getElementById('c'),
-            ctx = c.getContext('2d');
-        c.width = window.innerWidth;
-        c.height = window.innerHeight;
-        const cols = Math.floor(c.width / 18),
-            drops = Array(cols).fill(1);
+        const c = document.getElementById('c'), ctx = c.getContext('2d');
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        const cols = Math.floor(c.width/18), drops = Array(cols).fill(1);
         const chars = '01アイウエオABCDEF';
         setInterval(() => {
-            ctx.fillStyle = 'rgba(8,8,16,.05)';
-            ctx.fillRect(0, 0, c.width, c.height);
-            ctx.fillStyle = '#00ff88';
-            ctx.font = '13px Share Tech Mono';
-            drops.forEach((y, i) => {
-                ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 18, y * 18);
-                if (y * 18 > c.height && Math.random() > .975) drops[i] = 0;
+            ctx.fillStyle='rgba(8,8,16,.05)'; ctx.fillRect(0,0,c.width,c.height);
+            ctx.fillStyle='#00ff88'; ctx.font='13px Share Tech Mono';
+            drops.forEach((y,i) => {
+                ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*18,y*18);
+                if(y*18>c.height&&Math.random()>.975) drops[i]=0;
                 drops[i]++;
             });
-        }, 55);
+        },55);
     </script>
 </body>
-
 </html>
